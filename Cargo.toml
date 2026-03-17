@@ -1,0 +1,22 @@
+[package]
+name = "xlsynth-kind2"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Prototype exporter from XLS-style transition systems to Lustre/Kind 2"
+
+[workspace]
+members = [".", "fuzz"]
+default-members = ["."]
+resolver = "3"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tempfile = "3.23.0"
+toml = "0.9"
+xlsynth = "0.39.0"
+xlsynth-pir = "0.39.0"
+xlsynth-sys = "0.39.0"
+
+[dev-dependencies]
+arbitrary = "1.4.2"

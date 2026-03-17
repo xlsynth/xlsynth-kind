@@ -1,0 +1,28 @@
+package hazard_control
+
+file_number 0 "/tmp/xk2_hazard_gen/hazard_control.x"
+
+top fn __hazard_control__step(i: (bits[1], bits[1], bits[1]) id=1, s: (bits[4], bits[1]) id=2) -> ((bits[4], bits[1]), bits[1]) {
+  s_credits: bits[4] = tuple_index(s, index=0, id=5, pos=[(0,13,41)])
+  literal.37: bits[4] = literal(value=0, id=37)
+  i_queue_consume: bits[1] = tuple_index(i, index=0, id=3, pos=[(0,13,22)])
+  ne.38: bits[1] = ne(s_credits, literal.37, id=38, pos=[(0,13,41)])
+  not.41: bits[1] = not(i_queue_consume, id=41, pos=[(0,14,14)])
+  literal.59: bits[3] = literal(value=0, id=59)
+  i_queue_credit_return: bits[1] = tuple_index(i, index=1, id=13, pos=[(0,16,20)])
+  not.44: bits[1] = not(ne.38, id=44, pos=[(0,17,19)])
+  s_active: bits[1] = tuple_index(s, index=1, id=10, pos=[(0,14,31)])
+  nor.42: bits[1] = nor(not.41, ne.38, id=42, pos=[(0,14,14)])
+  concat.63: bits[4] = concat(literal.59, i_queue_credit_return, id=63)
+  nor.45: bits[1] = nor(not.41, not.44, s_active, id=45, pos=[(0,17,19)])
+  stall: bits[1] = or(nor.42, s_active, id=11, pos=[(0,14,14)])
+  credits: bits[4] = add(s_credits, concat.63, id=48)
+  sign_ext.54: bits[4] = sign_ext(nor.45, new_bit_count=4, id=54)
+  i_active_set: bits[1] = tuple_index(i, index=2, id=24, pos=[(0,18,16)])
+  issue_ok: bits[1] = not(stall, id=12, pos=[(0,15,17)])
+  credits__1: bits[4] = add(credits, sign_ext.54, id=51)
+  active: bits[1] = and(i_active_set, issue_ok, id=25, pos=[(0,18,16)])
+  tuple.26: (bits[4], bits[1]) = tuple(credits__1, active, id=26, pos=[(0,19,16)])
+  ret tuple.27: ((bits[4], bits[1]), bits[1]) = tuple(tuple.26, stall, id=27, pos=[(0,19,2)])
+}
+

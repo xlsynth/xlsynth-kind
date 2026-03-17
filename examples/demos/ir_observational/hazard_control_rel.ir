@@ -1,0 +1,14 @@
+package hazard_control_rel
+
+file_number 0 "/tmp/xk2_hazard_rel_gen/hazard_control_rel.x"
+
+top fn __hazard_control_rel__rel(i: (bits[1], bits[1], bits[1]) id=1, a: (bits[4], bits[1]) id=2, b: (bits[4], bits[1]) id=3) -> bits[1] {
+  a_credits: bits[4] = tuple_index(a, index=0, id=4, pos=[(0,13,3)])
+  b_credits: bits[4] = tuple_index(b, index=0, id=5, pos=[(0,13,16)])
+  a_active: bits[1] = tuple_index(a, index=1, id=7, pos=[(0,13,29)])
+  b_active: bits[1] = tuple_index(b, index=1, id=8, pos=[(0,13,41)])
+  eq.6: bits[1] = eq(a_credits, b_credits, id=6, pos=[(0,13,3)])
+  eq.9: bits[1] = eq(a_active, b_active, id=9, pos=[(0,13,29)])
+  ret and.10: bits[1] = and(eq.6, eq.9, id=10, pos=[(0,13,3)])
+}
+

@@ -1,0 +1,34 @@
+package batch_outputwide
+
+top fn step(command: bits[105] id=1, memory: bits[7] id=2) -> (bits[98], bits[7]) {
+  batch_size: bits[7] = bit_slice(command, start=0, width=7, id=3)
+  begin_batch: bits[1] = bit_slice(command, start=7, width=1, id=4)
+  advance: bits[1] = bit_slice(command, start=8, width=1, id=5)
+  payload_lo: bits[48] = bit_slice(command, start=9, width=48, id=6)
+  payload_hi: bits[48] = bit_slice(command, start=57, width=48, id=7)
+
+  zero_count: bits[7] = literal(value=0, id=8)
+  one_count: bits[7] = literal(value=1, id=9)
+  empty: bits[1] = eq(memory, zero_count, id=10)
+  busy: bits[1] = not(empty, id=11)
+  accept: bits[1] = and(empty, begin_batch, id=12)
+  consume: bits[1] = and(busy, advance, id=13)
+  last_unit: bits[1] = eq(memory, one_count, id=14)
+  finished: bits[1] = and(consume, last_unit, id=15)
+  decremented: bits[7] = sub(memory, one_count, id=16)
+  after_advance: bits[7] = sel(consume, cases=[memory, decremented], id=17)
+  next_count: bits[7] = sel(accept, cases=[after_advance, batch_size], id=18)
+
+  extended_count: bits[48] = zero_ext(memory, new_bit_count=48, id=19)
+  empty_lane: bits[48] = literal(value=0, id=20)
+  adjusted_lo: bits[48] = add(payload_lo, extended_count, id=21)
+  visible_lo: bits[48] = sel(busy, cases=[empty_lane, adjusted_lo], id=22)
+  adjusted_hi: bits[48] = add(payload_hi, extended_count, id=23)
+  visible_hi: bits[48] = sel(busy, cases=[empty_lane, adjusted_hi], id=24)
+  observation: bits[98] = concat(visible_hi, visible_lo, finished, busy, id=25)
+  ret result: (bits[98], bits[7]) = tuple(observation, next_count, id=26)
+}
+
+fn rel(first: bits[7] id=27, second: bits[7] id=28) -> bits[1] {
+  ret equal: bits[1] = eq(first, second, id=29)
+}

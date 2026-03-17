@@ -1,0 +1,47 @@
+package batch_statewide
+
+top fn step(command: bits[105] id=1, memory: bits[103] id=2) -> (bits[2], bits[103]) {
+  batch_size: bits[7] = bit_slice(command, start=0, width=7, id=3)
+  begin_batch: bits[1] = bit_slice(command, start=7, width=1, id=4)
+  advance: bits[1] = bit_slice(command, start=8, width=1, id=5)
+  payload_lo: bits[48] = bit_slice(command, start=9, width=48, id=6)
+  payload_hi: bits[48] = bit_slice(command, start=57, width=48, id=7)
+  remaining: bits[7] = bit_slice(memory, start=0, width=7, id=8)
+  history_lo: bits[48] = bit_slice(memory, start=7, width=48, id=9)
+  history_hi: bits[48] = bit_slice(memory, start=55, width=48, id=10)
+
+  zero_count: bits[7] = literal(value=0, id=11)
+  one_count: bits[7] = literal(value=1, id=12)
+  empty: bits[1] = eq(remaining, zero_count, id=13)
+  busy: bits[1] = not(empty, id=14)
+  accept: bits[1] = and(empty, begin_batch, id=15)
+  consume: bits[1] = and(busy, advance, id=16)
+  last_unit: bits[1] = eq(remaining, one_count, id=17)
+  finished: bits[1] = and(consume, last_unit, id=18)
+  decremented: bits[7] = sub(remaining, one_count, id=19)
+  after_advance: bits[7] = sel(consume, cases=[remaining, decremented], id=20)
+  next_count: bits[7] = sel(accept, cases=[after_advance, batch_size], id=21)
+
+  folded_lo: bits[48] = add(history_lo, payload_lo, id=22)
+  after_consume_lo: bits[48] = sel(consume, cases=[history_lo, folded_lo], id=23)
+  next_history_lo: bits[48] = sel(accept, cases=[after_consume_lo, payload_lo], id=24)
+  folded_hi: bits[48] = add(history_hi, payload_hi, id=25)
+  after_consume_hi: bits[48] = sel(consume, cases=[history_hi, folded_hi], id=26)
+  next_history_hi: bits[48] = sel(accept, cases=[after_consume_hi, payload_hi], id=27)
+  next_memory: bits[103] = concat(next_history_hi, next_history_lo, next_count, id=28)
+  observation: bits[2] = concat(finished, busy, id=29)
+  ret result: (bits[2], bits[103]) = tuple(observation, next_memory, id=30)
+}
+
+fn rel(first: bits[103] id=31, second: bits[103] id=32) -> bits[1] {
+  first_count: bits[7] = bit_slice(first, start=0, width=7, id=33)
+  second_count: bits[7] = bit_slice(second, start=0, width=7, id=34)
+  same_count: bits[1] = eq(first_count, second_count, id=35)
+  first_history_lo: bits[48] = bit_slice(first, start=7, width=48, id=36)
+  second_history_lo: bits[48] = bit_slice(second, start=7, width=48, id=37)
+  same_history_lo: bits[1] = eq(first_history_lo, second_history_lo, id=38)
+  first_history_hi: bits[48] = bit_slice(first, start=55, width=48, id=39)
+  second_history_hi: bits[48] = bit_slice(second, start=55, width=48, id=40)
+  same_history_hi: bits[1] = eq(first_history_hi, second_history_hi, id=41)
+  ret equal: bits[1] = and(same_count, same_history_lo, same_history_hi, id=42)
+}

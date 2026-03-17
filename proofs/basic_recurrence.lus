@@ -1,0 +1,16 @@
+node step(i: int; s_in: int) returns (o: int; s_out: int);
+let
+  o = i + s_in;
+  s_out = s_in + 1;
+tel
+
+node main(i: int) returns (o: int; s: int; state_non_negative: bool);
+var
+  s_in, s_out: int;
+let
+  s_in = 0 -> pre(s_out);
+  (o, s_out) = step(i, s_in);
+  s = s_in;
+  state_non_negative = s >= 0;
+  --%PROPERTY state_non_negative;
+tel

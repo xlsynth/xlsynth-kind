@@ -1,0 +1,10 @@
+[main]
+kind = "observational"
+depends_on = ["equal_state"]
+
+[[aux]]
+name = "equal_state"
+kind = "relation"
+ir = "hazard_control_rel.ir"
+top = "__hazard_control_rel__rel"
+decompose_relation = true

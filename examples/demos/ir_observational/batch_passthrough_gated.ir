@@ -1,0 +1,29 @@
+package batch_passthrough_gated
+
+top fn step(command: bits[21] id=1, memory: bits[7] id=2) -> (bits[14], bits[7]) {
+  batch_size: bits[7] = bit_slice(command, start=0, width=7, id=3)
+  begin_batch: bits[1] = bit_slice(command, start=7, width=1, id=4)
+  advance: bits[1] = bit_slice(command, start=8, width=1, id=5)
+  annotation: bits[12] = bit_slice(command, start=9, width=12, id=6)
+
+  zero_count: bits[7] = literal(value=0, id=7)
+  one_count: bits[7] = literal(value=1, id=8)
+  empty: bits[1] = eq(memory, zero_count, id=9)
+  busy: bits[1] = not(empty, id=10)
+  accept: bits[1] = and(empty, begin_batch, id=11)
+  consume: bits[1] = and(busy, advance, id=12)
+  last_unit: bits[1] = eq(memory, one_count, id=13)
+  finished: bits[1] = and(consume, last_unit, id=14)
+  decremented: bits[7] = sub(memory, one_count, id=15)
+  after_advance: bits[7] = sel(consume, cases=[memory, decremented], id=16)
+  next_count: bits[7] = sel(accept, cases=[after_advance, batch_size], id=17)
+
+  empty_annotation: bits[12] = literal(value=0, id=18)
+  visible_annotation: bits[12] = sel(busy, cases=[empty_annotation, annotation], id=19)
+  observation: bits[14] = concat(visible_annotation, finished, busy, id=20)
+  ret result: (bits[14], bits[7]) = tuple(observation, next_count, id=21)
+}
+
+fn rel(first: bits[7] id=22, second: bits[7] id=23) -> bits[1] {
+  ret equal: bits[1] = eq(first, second, id=24)
+}

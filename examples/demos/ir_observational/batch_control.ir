@@ -1,0 +1,26 @@
+package batch_control
+
+top fn step(command: bits[9] id=1, memory: bits[7] id=2) -> (bits[2], bits[7]) {
+  batch_size: bits[7] = bit_slice(command, start=0, width=7, id=3)
+  begin_batch: bits[1] = bit_slice(command, start=7, width=1, id=4)
+  advance: bits[1] = bit_slice(command, start=8, width=1, id=5)
+
+  zero_count: bits[7] = literal(value=0, id=6)
+  one_count: bits[7] = literal(value=1, id=7)
+  empty: bits[1] = eq(memory, zero_count, id=8)
+  busy: bits[1] = not(empty, id=9)
+  accept: bits[1] = and(empty, begin_batch, id=10)
+  consume: bits[1] = and(busy, advance, id=11)
+  last_unit: bits[1] = eq(memory, one_count, id=12)
+  finished: bits[1] = and(consume, last_unit, id=13)
+  decremented: bits[7] = sub(memory, one_count, id=14)
+  after_advance: bits[7] = sel(consume, cases=[memory, decremented], id=15)
+  next_count: bits[7] = sel(accept, cases=[after_advance, batch_size], id=16)
+
+  observation: bits[2] = concat(finished, busy, id=17)
+  ret result: (bits[2], bits[7]) = tuple(observation, next_count, id=18)
+}
+
+fn rel(first: bits[7] id=19, second: bits[7] id=20) -> bits[1] {
+  ret equal: bits[1] = eq(first, second, id=21)
+}

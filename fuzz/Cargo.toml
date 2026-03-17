@@ -1,0 +1,23 @@
+[package]
+name = "xlsynth-kind2-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+license = "Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "1.4.2", features = ["derive"] }
+libfuzzer-sys = "0.4.10"
+xlsynth = "0.39.0"
+xlsynth-pir = "0.39.0"
+xlsynth-kind2 = { path = ".." }
+
+[[bin]]
+name = "step_roundtrip_equiv"
+path = "fuzz_targets/step_roundtrip_equiv.rs"
+test = false
+doc = false
+bench = false

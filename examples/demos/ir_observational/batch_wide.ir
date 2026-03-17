@@ -1,0 +1,53 @@
+package batch_wide
+
+top fn step(command: bits[105] id=1, memory: bits[103] id=2) -> (bits[98], bits[103]) {
+  batch_size: bits[7] = bit_slice(command, start=0, width=7, id=3)
+  begin_batch: bits[1] = bit_slice(command, start=7, width=1, id=4)
+  advance: bits[1] = bit_slice(command, start=8, width=1, id=5)
+  payload_lo: bits[48] = bit_slice(command, start=9, width=48, id=6)
+  payload_hi: bits[48] = bit_slice(command, start=57, width=48, id=7)
+  remaining: bits[7] = bit_slice(memory, start=0, width=7, id=8)
+  history_lo: bits[48] = bit_slice(memory, start=7, width=48, id=9)
+  history_hi: bits[48] = bit_slice(memory, start=55, width=48, id=10)
+
+  zero_count: bits[7] = literal(value=0, id=11)
+  one_count: bits[7] = literal(value=1, id=12)
+  empty: bits[1] = eq(remaining, zero_count, id=13)
+  busy: bits[1] = not(empty, id=14)
+  accept: bits[1] = and(empty, begin_batch, id=15)
+  consume: bits[1] = and(busy, advance, id=16)
+  last_unit: bits[1] = eq(remaining, one_count, id=17)
+  finished: bits[1] = and(consume, last_unit, id=18)
+  decremented: bits[7] = sub(remaining, one_count, id=19)
+  after_advance: bits[7] = sel(consume, cases=[remaining, decremented], id=20)
+  next_count: bits[7] = sel(accept, cases=[after_advance, batch_size], id=21)
+
+  folded_lo: bits[48] = add(history_lo, payload_lo, id=22)
+  after_consume_lo: bits[48] = sel(consume, cases=[history_lo, folded_lo], id=23)
+  next_history_lo: bits[48] = sel(accept, cases=[after_consume_lo, payload_lo], id=24)
+  folded_hi: bits[48] = add(history_hi, payload_hi, id=25)
+  after_consume_hi: bits[48] = sel(consume, cases=[history_hi, folded_hi], id=26)
+  next_history_hi: bits[48] = sel(accept, cases=[after_consume_hi, payload_hi], id=27)
+  next_memory: bits[103] = concat(next_history_hi, next_history_lo, next_count, id=28)
+  extended_count: bits[48] = zero_ext(remaining, new_bit_count=48, id=29)
+  empty_lane: bits[48] = literal(value=0, id=30)
+  adjusted_lo: bits[48] = add(folded_lo, extended_count, id=31)
+  visible_lo: bits[48] = sel(busy, cases=[empty_lane, adjusted_lo], id=32)
+  adjusted_hi: bits[48] = add(folded_hi, extended_count, id=33)
+  visible_hi: bits[48] = sel(busy, cases=[empty_lane, adjusted_hi], id=34)
+  observation: bits[98] = concat(visible_hi, visible_lo, finished, busy, id=35)
+  ret result: (bits[98], bits[103]) = tuple(observation, next_memory, id=36)
+}
+
+fn rel(first: bits[103] id=37, second: bits[103] id=38) -> bits[1] {
+  first_count: bits[7] = bit_slice(first, start=0, width=7, id=39)
+  second_count: bits[7] = bit_slice(second, start=0, width=7, id=40)
+  same_count: bits[1] = eq(first_count, second_count, id=41)
+  first_history_lo: bits[48] = bit_slice(first, start=7, width=48, id=42)
+  second_history_lo: bits[48] = bit_slice(second, start=7, width=48, id=43)
+  same_history_lo: bits[1] = eq(first_history_lo, second_history_lo, id=44)
+  first_history_hi: bits[48] = bit_slice(first, start=55, width=48, id=45)
+  second_history_hi: bits[48] = bit_slice(second, start=55, width=48, id=46)
+  same_history_hi: bits[1] = eq(first_history_hi, second_history_hi, id=47)
+  ret equal: bits[1] = and(same_count, same_history_lo, same_history_hi, id=48)
+}
